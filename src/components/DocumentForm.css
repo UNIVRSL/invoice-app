@@ -214,3 +214,42 @@
   color: var(--color-text-muted);
   margin-top: 1px;
 }
+
+@media (max-width: 768px) {
+  .doc-form {
+    max-width: 100%;
+  }
+
+  .doc-form-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .doc-form-header-left {
+    width: 100%;
+  }
+
+  .doc-form-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .doc-form-parties {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .doc-form-meta {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .doc-form-totals {
+    align-items: stretch;
+  }
+
+  .totals-row {
+    min-width: 0;
+  }
+}

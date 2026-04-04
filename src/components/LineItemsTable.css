@@ -75,3 +75,14 @@
   background: var(--color-surface);
   color: var(--color-text);
 }
+
+@media (max-width: 768px) {
+  .line-items-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .line-items-table {
+    min-width: 480px;
+  }
+}

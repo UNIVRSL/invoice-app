@@ -124,3 +124,17 @@
   color: var(--color-text-muted);
   font-weight: 400;
 }
+
+@media (max-width: 768px) {
+  .clients-search-wrap {
+    max-width: 100%;
+  }
+
+  .clients-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .client-delete-btn {
+    opacity: 1;
+  }
+}

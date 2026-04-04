@@ -53,3 +53,18 @@
   font-weight: 500;
   color: var(--color-text-secondary);
 }
+
+@media (max-width: 768px) {
+  .settings-page {
+    max-width: 100%;
+  }
+
+  .settings-card {
+    padding: 18px;
+  }
+
+  .settings-row--two {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

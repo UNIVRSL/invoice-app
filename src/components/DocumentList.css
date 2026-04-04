@@ -77,3 +77,24 @@
 .doc-row:hover .doc-delete-btn {
   opacity: 1;
 }
+
+@media (max-width: 768px) {
+  .doc-list {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .doc-table {
+    min-width: 580px;
+  }
+
+  .doc-table th,
+  .doc-table td {
+    padding: 10px 10px;
+    font-size: 13px;
+  }
+
+  .doc-delete-btn {
+    opacity: 1;
+  }
+}

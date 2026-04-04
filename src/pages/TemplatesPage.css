@@ -83,3 +83,18 @@
 .template-preview-panel {
   min-width: 0;
 }
+
+@media (max-width: 768px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .template-editor-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .template-editor-panel {
+    position: static;
+  }
+}

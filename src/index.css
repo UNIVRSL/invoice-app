@@ -111,3 +111,19 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* Divider */
 .divider { height: 1px; background: var(--color-border); margin: 20px 0; }
+
+/* Mobile global */
+@media (max-width: 768px) {
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
