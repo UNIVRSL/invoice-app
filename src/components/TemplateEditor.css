@@ -1,0 +1,110 @@
+.template-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.template-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.template-editor-default-note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  transition: background 0.1s;
+}
+
+.section-row:last-child {
+  border-bottom: none;
+}
+
+.section-row--disabled {
+  background: var(--color-surface);
+}
+
+.section-row--disabled .section-label {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.section-label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.section-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.section-controls .btn-icon:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* Toggle switch */
+.section-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.section-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.section-toggle-track {
+  width: 34px;
+  height: 18px;
+  background: var(--color-border-dark);
+  border-radius: 9px;
+  position: relative;
+  transition: background 0.2s;
+  display: block;
+}
+
+.section-toggle input:checked + .section-toggle-track {
+  background: var(--color-accent);
+}
+
+.section-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  display: block;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.section-toggle input:checked + .section-toggle-track .section-toggle-thumb {
+  transform: translateX(16px);
+}

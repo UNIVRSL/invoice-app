@@ -1,0 +1,55 @@
+.settings-page {
+  max-width: 600px;
+}
+
+.settings-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+
+.settings-section-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.settings-note {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-row {
+  display: flex;
+  gap: 16px;
+}
+
+.settings-row--two > * {
+  flex: 1;
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.settings-saved-msg {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}

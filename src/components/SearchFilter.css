@@ -1,0 +1,51 @@
+.search-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-filter-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.search-filter-input {
+  padding-left: 32px;
+  width: 100%;
+}
+
+.search-filter-select {
+  width: auto;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.search-filter-dates {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.search-filter-date {
+  width: 140px;
+}
+
+.search-filter-date-sep {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}

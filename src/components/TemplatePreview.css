@@ -1,0 +1,133 @@
+.template-preview-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.template-preview-scaler {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+  padding: 12px;
+}
+
+.template-preview-page {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  font-size: 10px;
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prev-section {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 10px;
+}
+
+.prev-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.prev-label {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 3px;
+}
+
+.prev-header .prev-biz-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.prev-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 10px;
+}
+
+.prev-meta span.prev-label {
+  display: inline;
+  margin-right: 4px;
+  font-size: 8px;
+}
+
+.prev-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+
+.prev-table th {
+  text-align: left;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.prev-table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.prev-table tr:last-child td {
+  border-bottom: none;
+}
+
+.prev-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+  font-size: 9px;
+}
+
+.prev-totals-row {
+  display: flex;
+  gap: 12px;
+  min-width: 120px;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+}
+
+.prev-totals-total {
+  font-weight: 700;
+  color: var(--color-text);
+  padding-top: 3px;
+  border-top: 1px solid var(--color-accent);
+}
+
+.prev-notes, .prev-terms, .prev-payment {
+  font-size: 9px;
+  color: var(--color-text-secondary);
+}
+
+.prev-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  padding: 24px 0;
+}

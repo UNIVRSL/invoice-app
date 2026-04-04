@@ -1,0 +1,79 @@
+.doc-list {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.doc-table thead tr {
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.doc-table th {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.doc-row {
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.doc-row:last-child {
+  border-bottom: none;
+}
+
+.doc-row:hover {
+  background: var(--color-hover);
+}
+
+.doc-table td {
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.doc-number {
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.doc-client {
+  font-weight: 500;
+}
+
+.doc-date {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.doc-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.doc-delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.doc-row:hover .doc-delete-btn {
+  opacity: 1;
+}
