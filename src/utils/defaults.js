@@ -32,6 +32,7 @@ export function createEmptyInvoice(settings = defaultSettings) {
     discountRate: 0,
     total: 0,
     notes: '',
+    attachments: [],
     templateId: 'default-standard',
   };
 }
@@ -58,6 +59,7 @@ export function createEmptyQuote(settings = defaultSettings) {
     taxRate: 0,
     total: 0,
     notes: '',
+    attachments: [],
     templateId: 'default-standard',
   };
 }

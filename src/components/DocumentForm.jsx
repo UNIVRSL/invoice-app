@@ -1,17 +1,71 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import LineItemsTable from './LineItemsTable';
 import { useAppContext } from '../context/AppContext';
-import { calculateSubtotal, calculateTotal, formatCurrency } from '../utils/helpers';
+import { calculateSubtotal, calculateTotal, formatCurrency, generateId } from '../utils/helpers';
 import './DocumentForm.css';
+
+const MAX_PHOTOS = 5;
+const MAX_PX = 1200;
+const QUALITY = 0.78;
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > MAX_PX || height > MAX_PX) {
+          const ratio = Math.min(MAX_PX / width, MAX_PX / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', QUALITY));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const INVOICE_STATUSES = ['draft', 'sent', 'paid'];
 const QUOTE_STATUSES = ['draft', 'sent', 'accepted', 'declined'];
 
 export default function DocumentForm({ document: doc, type, onSave, onCancel }) {
   const { clients } = useAppContext();
-  const [form, setForm] = useState({ ...doc });
+  const [form, setForm] = useState({ ...doc, attachments: doc.attachments || [] });
   const [clientSearch, setClientSearch] = useState('');
   const [showClientList, setShowClientList] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // dataUrl of enlarged photo
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  async function handlePhotoAdd(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const remaining = MAX_PHOTOS - (form.attachments?.length || 0);
+    const toProcess = files.slice(0, remaining);
+    setUploading(true);
+    try {
+      const compressed = await Promise.all(
+        toProcess.map(async f => ({ id: generateId(), name: f.name, dataUrl: await compressImage(f) }))
+      );
+      setForm(prev => ({ ...prev, attachments: [...(prev.attachments || []), ...compressed] }));
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  function handlePhotoRemove(id) {
+    setForm(prev => ({ ...prev, attachments: prev.attachments.filter(a => a.id !== id) }));
+  }
 
   const filteredClients = clientSearch.trim()
     ? clients.filter(c =>
@@ -291,7 +345,79 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
             style={{ marginTop: 6 }}
           />
         </div>
+
+        {/* Photo attachments */}
+        <div className="doc-form-section">
+          <div className="attachments-header">
+            <span className="form-label">Photos</span>
+            <span className="attachments-count">
+              {form.attachments.length}/{MAX_PHOTOS}
+            </span>
+          </div>
+
+          {form.attachments.length > 0 && (
+            <div className="attachments-grid">
+              {form.attachments.map(att => (
+                <div key={att.id} className="attachment-thumb">
+                  <img
+                    src={att.dataUrl}
+                    alt={att.name}
+                    onClick={() => setLightbox(att.dataUrl)}
+                    title={att.name}
+                  />
+                  <button
+                    type="button"
+                    className="attachment-remove"
+                    onClick={() => handlePhotoRemove(att.id)}
+                    title="Remove photo"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {form.attachments.length < MAX_PHOTOS && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handlePhotoAdd}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary attachment-add-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21,15 16,10 5,21"/>
+                </svg>
+                {uploading ? 'Processing...' : 'Add Photos'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="lightbox-overlay" onClick={() => setLightbox(null)}>
+          <img src={lightbox} className="lightbox-img" alt="Attachment" onClick={e => e.stopPropagation()} />
+          <button type="button" className="lightbox-close" onClick={() => setLightbox(null)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      )}
     </form>
   );
 }
