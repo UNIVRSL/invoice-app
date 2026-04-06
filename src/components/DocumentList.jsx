@@ -33,7 +33,7 @@ export default function DocumentList({ documents, type, onSelect, onDelete }) {
         </thead>
         <tbody>
           {documents.map(doc => (
-            <tr key={doc.id} className="doc-row" onClick={() => onSelect(doc.id)}>
+            <tr key={doc.id} className={`doc-row${doc.status === 'paid' ? ' doc-row--paid' : ''}`} onClick={() => onSelect(doc.id)}>
               <td className="doc-number">{doc.number}</td>
               <td className="doc-client">{doc.to?.name || <span className="text-muted">—</span>}</td>
               <td className="doc-date">{formatDate(doc.createdAt)}</td>
