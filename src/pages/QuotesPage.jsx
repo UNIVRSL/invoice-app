@@ -4,6 +4,7 @@ import { createEmptyQuote } from '../utils/defaults';
 import { generateQuoteNumber } from '../utils/helpers';
 import DocumentList from '../components/DocumentList';
 import DocumentForm from '../components/DocumentForm';
+import DocumentPreview from '../components/DocumentPreview';
 import SearchFilter from '../components/SearchFilter';
 import Modal from '../components/Modal';
 import './DocumentPage.css';
@@ -12,8 +13,8 @@ const STATUSES = ['draft', 'sent', 'accepted', 'declined'];
 
 export default function QuotesPage() {
   const { quotes, addQuote, updateQuote, deleteQuote, settings } = useAppContext();
-  const [view, setView] = useState('list');
-  const [editing, setEditing] = useState(null);
+  const [view, setView] = useState('list');       // list | preview | form
+  const [selected, setSelected] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,13 +25,17 @@ export default function QuotesPage() {
   function handleNew() {
     const q = createEmptyQuote(settings);
     q.number = generateQuoteNumber(quotes);
-    setEditing(q);
+    setSelected(q);
     setView('form');
   }
 
   function handleSelect(id) {
     const q = quotes.find(q => q.id === id);
-    if (q) { setEditing({ ...q }); setView('form'); }
+    if (q) { setSelected({ ...q }); setView('preview'); }
+  }
+
+  function handleEdit() {
+    setView('form');
   }
 
   function handleSave(q) {
@@ -38,12 +43,23 @@ export default function QuotesPage() {
     if (exists) updateQuote(q.id, q);
     else addQuote(q);
     setView('list');
-    setEditing(null);
+    setSelected(null);
   }
 
   function handleCancel() {
+    if (view === 'form' && selected && quotes.some(q => q.id === selected.id)) {
+      const latest = quotes.find(q => q.id === selected.id);
+      setSelected({ ...latest });
+      setView('preview');
+    } else {
+      setView('list');
+      setSelected(null);
+    }
+  }
+
+  function handleBack() {
     setView('list');
-    setEditing(null);
+    setSelected(null);
   }
 
   function handleDeleteConfirm() {
@@ -61,10 +77,21 @@ export default function QuotesPage() {
     return true;
   });
 
-  if (view === 'form' && editing) {
+  if (view === 'preview' && selected) {
+    return (
+      <DocumentPreview
+        document={selected}
+        type="quote"
+        onEdit={handleEdit}
+        onBack={handleBack}
+      />
+    );
+  }
+
+  if (view === 'form' && selected) {
     return (
       <DocumentForm
-        document={editing}
+        document={selected}
         type="quote"
         onSave={handleSave}
         onCancel={handleCancel}
