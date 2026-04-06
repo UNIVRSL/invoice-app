@@ -38,7 +38,7 @@ const INVOICE_STATUSES = ['draft', 'sent', 'paid'];
 const QUOTE_STATUSES = ['draft', 'sent', 'accepted', 'declined'];
 
 export default function DocumentForm({ document: doc, type, onSave, onCancel }) {
-  const { clients, materials } = useAppContext();
+  const { clients, materials, addMaterial } = useAppContext();
   const [form, setForm] = useState({
     ...doc,
     attachments: doc.attachments || [],
@@ -48,6 +48,9 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
   const [showClientList, setShowClientList] = useState(false);
   const [matSearch, setMatSearch] = useState('');
   const [showMatList, setShowMatList] = useState(false);
+  const [newMatModal, setNewMatModal] = useState(false);
+  const [newMatForm, setNewMatForm] = useState({ name: '', description: '', price: '', photo: null });
+  const [newMatUploading, setNewMatUploading] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -76,6 +79,39 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
     });
     setMatSearch('');
     setShowMatList(false);
+  }
+
+  async function handleNewMatPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setNewMatUploading(true);
+    try {
+      const dataUrl = await compressImage(file);
+      setNewMatForm(prev => ({ ...prev, photo: dataUrl }));
+    } finally {
+      setNewMatUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  function handleNewMatSave(e) {
+    e.preventDefault();
+    if (!newMatForm.name.trim()) return;
+    const id = generateId();
+    const material = {
+      id,
+      name: newMatForm.name.trim(),
+      description: newMatForm.description.trim(),
+      price: newMatForm.price !== '' ? parseFloat(newMatForm.price) : null,
+      photo: newMatForm.photo,
+    };
+    // Save to global materials catalog
+    addMaterial(material);
+    // Add to this quote
+    addQuoteMaterial(material);
+    // Reset modal
+    setNewMatModal(false);
+    setNewMatForm({ name: '', description: '', price: '', photo: null });
   }
 
   function removeQuoteMaterial(id) {
@@ -385,12 +421,19 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
                   )}
                 </div>
               </div>
-            ) : (
-              <p className="qmat-empty-hint">
-                No materials saved yet.{' '}
-                <span style={{ color: 'var(--color-text-muted)' }}>Add materials on the Materials page first.</span>
-              </p>
-            )}
+            ) : null}
+
+            {/* Add new material on the fly */}
+            <button
+              type="button"
+              className="btn btn-ghost qmat-new-btn"
+              onClick={() => { setNewMatModal(true); setShowMatList(false); }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add New Material
+            </button>
 
             {/* Added materials list */}
             {form.quoteMaterials.length > 0 && (
@@ -541,6 +584,91 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
           )}
         </div>
       </div>
+
+      {/* Quick-create material modal */}
+      {newMatModal && (
+        <div className="modal-overlay" onClick={() => setNewMatModal(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">New Material</h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setNewMatModal(false)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleNewMatSave} className="material-form">
+                {/* Photo */}
+                <div className="material-form-photo-wrap">
+                  {newMatForm.photo ? (
+                    <div className="material-form-photo-preview">
+                      <img src={newMatForm.photo} alt="Preview" />
+                      <button type="button" className="material-form-photo-remove" onClick={() => setNewMatForm(p => ({ ...p, photo: null }))}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`material-form-photo-upload${newMatUploading ? ' material-form-photo-upload--loading' : ''}`}>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleNewMatPhoto} disabled={newMatUploading} />
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21,15 16,10 5,21"/>
+                      </svg>
+                      <span>{newMatUploading ? 'Processing...' : 'Add Photo'}</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. PVC Pipe 1/2 inch"
+                    value={newMatForm.name}
+                    onChange={e => setNewMatForm(p => ({ ...p, name: e.target.value }))}
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Description <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11 }}>(optional)</span></label>
+                  <textarea
+                    placeholder="Brand, size, specs..."
+                    value={newMatForm.description}
+                    onChange={e => setNewMatForm(p => ({ ...p, description: e.target.value }))}
+                    style={{ minHeight: 60 }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Price <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11 }}>(optional)</span></label>
+                  <div className="material-price-wrap">
+                    <span className="material-price-symbol">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={newMatForm.price}
+                      onChange={e => setNewMatForm(p => ({ ...p, price: e.target.value }))}
+                      className="material-price-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="material-form-actions">
+                  <button type="button" className="btn btn-secondary" onClick={() => setNewMatModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Save &amp; Add</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightbox && (
