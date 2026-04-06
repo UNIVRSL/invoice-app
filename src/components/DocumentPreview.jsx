@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { getPhotos } from '../hooks/usePhotoStore';
 import './DocumentPreview.css';
@@ -6,6 +8,8 @@ import './DocumentPreview.css';
 export default function DocumentPreview({ document: doc, type, onEdit, onBack }) {
   const [photoMap, setPhotoMap] = useState({});
   const [lightbox, setLightbox] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const bodyRef = useRef(null);
 
   useEffect(() => {
     async function resolve() {
@@ -18,6 +22,43 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
     }
     resolve().catch(console.error);
   }, [doc]);
+
+  async function handleDownloadPDF() {
+    if (!bodyRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(bodyRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      const pdfWidth = 210; // A4 mm
+      const pdfContentWidth = pdfWidth - 20; // 10mm margins
+      const ratio = pdfContentWidth / imgWidth;
+      const pdfContentHeight = imgHeight * ratio;
+      const pageHeight = 297 - 20; // A4 height minus margins
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let yOffset = 0;
+      let page = 0;
+
+      while (yOffset < pdfContentHeight) {
+        if (page > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 10, 10 - yOffset, pdfContentWidth, pdfContentHeight);
+        yOffset += pageHeight;
+        page++;
+      }
+
+      const filename = `${doc.number || (type === 'quote' ? 'Quote' : 'Invoice')}.pdf`;
+      pdf.save(filename);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const dateLabel = type === 'quote' ? 'Valid Until' : 'Due Date';
   const dateValue = type === 'quote' ? doc.validUntil : doc.dueDate;
@@ -45,6 +86,19 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
           <span className={`badge badge-${doc.status}`}>{doc.status}</span>
         </div>
         <div className="doc-preview-header-right">
+          <button
+            type="button"
+            className={`btn btn-secondary${downloading ? ' btn--disabled' : ''}`}
+            onClick={handleDownloadPDF}
+            disabled={downloading}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7,10 12,15 17,10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {downloading ? 'Generating...' : 'Download PDF'}
+          </button>
           <button type="button" className="btn btn-primary" onClick={onEdit}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -55,7 +109,7 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
         </div>
       </div>
 
-      <div className="doc-preview-body">
+      <div className="doc-preview-body" ref={bodyRef}>
         {/* From / To */}
         <div className="doc-preview-parties">
           <span className="doc-preview-parties-number">{doc.number}</span>
