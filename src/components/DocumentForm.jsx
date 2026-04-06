@@ -541,6 +541,17 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
           </div>
         )}
 
+        {/* Notes */}
+        <div className="doc-form-section">
+          <label className="form-label">Notes</label>
+          <textarea
+            placeholder="Add any notes or payment instructions..."
+            value={form.notes}
+            onChange={e => setField('notes', e.target.value)}
+            style={{ marginTop: 6 }}
+          />
+        </div>
+
         {/* Totals */}
         <div className="doc-form-totals">
           <div className="totals-row">
@@ -587,17 +598,6 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
             <span>Total</span>
             <span>{formatCurrency(total)}</span>
           </div>
-        </div>
-
-        {/* Notes */}
-        <div className="doc-form-section">
-          <label className="form-label">Notes</label>
-          <textarea
-            placeholder="Add any notes or payment instructions..."
-            value={form.notes}
-            onChange={e => setField('notes', e.target.value)}
-            style={{ marginTop: 6 }}
-          />
         </div>
 
         {/* Photo attachments */}
