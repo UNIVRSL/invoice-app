@@ -110,6 +110,9 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
       </div>
 
       <div className="doc-preview-body" ref={bodyRef}>
+        {doc.status === 'paid' && (
+          <div className="doc-preview-watermark">PAID</div>
+        )}
         {/* From / To */}
         <div className="doc-preview-parties">
           <span className="doc-preview-parties-number">{doc.number}</span>

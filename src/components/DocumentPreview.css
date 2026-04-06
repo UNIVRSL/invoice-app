@@ -29,9 +29,27 @@
 }
 
 .doc-preview-body {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow: hidden;
+}
+
+.doc-preview-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-35deg);
+  font-size: 120px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: rgba(34, 170, 60, 0.18);
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  user-select: none;
+  text-transform: uppercase;
 }
 
 /* Parties */
