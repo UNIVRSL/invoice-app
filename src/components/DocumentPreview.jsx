@@ -111,7 +111,7 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
                 {doc.lineItems.filter(li => li.description).map((li, i) => (
                   <tr key={i}>
                     <td>{li.description}</td>
-                    <td className="preview-col-num">{li.quantity}</td>
+                    <td className="preview-col-num">{li.qty}</td>
                     <td className="preview-col-num">{formatCurrency(li.rate)}</td>
                     <td className="preview-col-num">{formatCurrency(li.amount)}</td>
                   </tr>
