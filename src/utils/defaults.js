@@ -60,6 +60,7 @@ export function createEmptyQuote(settings = defaultSettings) {
     total: 0,
     notes: '',
     attachments: [],
+    quoteMaterials: [],
     templateId: 'default-standard',
   };
 }

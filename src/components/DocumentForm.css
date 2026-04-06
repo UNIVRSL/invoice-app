@@ -215,6 +215,195 @@
   margin-top: 1px;
 }
 
+/* Quote Materials section */
+.qmat-picker-wrap {
+  margin-bottom: 10px;
+}
+
+.qmat-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.qmat-search {
+  padding-left: 32px;
+  width: 100%;
+  font-size: 13px;
+}
+
+.qmat-dropdown {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.qmat-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.qmat-option:last-child { border-bottom: none; }
+.qmat-option:hover { background: var(--color-hover); }
+
+.qmat-option--added {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.qmat-option-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+}
+
+.qmat-option-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.qmat-option-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qmat-option-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qmat-option-price {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.qmat-option-added-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.qmat-empty-hint {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  padding: 10px 0 4px;
+}
+
+/* Added materials list */
+.qmat-list {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.qmat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.qmat-row:last-child { border-bottom: none; }
+
+.qmat-row-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  cursor: zoom-in;
+}
+
+.qmat-row-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.qmat-row-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qmat-row-desc {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qmat-row-price {
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
+.qmat-remove {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.qmat-row:hover .qmat-remove { opacity: 1; }
+
+@media (max-width: 768px) {
+  .qmat-remove { opacity: 1; }
+}
+
 /* Attachments */
 .attachments-header {
   display: flex;

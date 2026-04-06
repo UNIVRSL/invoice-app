@@ -38,12 +38,54 @@ const INVOICE_STATUSES = ['draft', 'sent', 'paid'];
 const QUOTE_STATUSES = ['draft', 'sent', 'accepted', 'declined'];
 
 export default function DocumentForm({ document: doc, type, onSave, onCancel }) {
-  const { clients } = useAppContext();
-  const [form, setForm] = useState({ ...doc, attachments: doc.attachments || [] });
+  const { clients, materials } = useAppContext();
+  const [form, setForm] = useState({
+    ...doc,
+    attachments: doc.attachments || [],
+    quoteMaterials: doc.quoteMaterials || [],
+  });
   const [clientSearch, setClientSearch] = useState('');
   const [showClientList, setShowClientList] = useState(false);
+  const [matSearch, setMatSearch] = useState('');
+  const [showMatList, setShowMatList] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  const filteredMaterials = matSearch.trim()
+    ? materials.filter(m =>
+        m.name?.toLowerCase().includes(matSearch.toLowerCase()) ||
+        m.description?.toLowerCase().includes(matSearch.toLowerCase())
+      )
+    : materials;
+
+  function addQuoteMaterial(material) {
+    if (form.quoteMaterials.some(qm => qm.materialId === material.id)) return;
+    const entry = {
+      id: generateId(),
+      materialId: material.id,
+      name: material.name,
+      description: material.description || '',
+      price: material.price ?? null,
+      photo: material.photo || null,
+    };
+    setForm(prev => {
+      const next = [...prev.quoteMaterials, entry];
+      const subtotal = calculateSubtotal(prev.lineItems) + materialsTotal(next);
+      const total = calculateTotal(subtotal, prev.taxRate, prev.discountRate);
+      return { ...prev, quoteMaterials: next, subtotal, total };
+    });
+    setMatSearch('');
+    setShowMatList(false);
+  }
+
+  function removeQuoteMaterial(id) {
+    setForm(prev => {
+      const next = prev.quoteMaterials.filter(qm => qm.id !== id);
+      const subtotal = calculateSubtotal(prev.lineItems) + materialsTotal(next);
+      const total = calculateTotal(subtotal, prev.taxRate, prev.discountRate);
+      return { ...prev, quoteMaterials: next, subtotal, total };
+    });
+  }
 
   async function handlePhotoAdd(e) {
     const files = Array.from(e.target.files);
@@ -105,27 +147,31 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
     });
   }
 
+  function materialsTotal(quoteMaterials) {
+    return (quoteMaterials || []).reduce((sum, qm) => sum + (parseFloat(qm.price) || 0), 0);
+  }
+
   function handleLineItemsChange(lineItems) {
-    const subtotal = calculateSubtotal(lineItems);
+    const subtotal = calculateSubtotal(lineItems) + materialsTotal(form.quoteMaterials);
     const total = calculateTotal(subtotal, form.taxRate, form.discountRate);
     setForm(prev => ({ ...prev, lineItems, subtotal, total }));
   }
 
   function handleTaxRateChange(taxRate) {
-    const subtotal = calculateSubtotal(form.lineItems);
+    const subtotal = calculateSubtotal(form.lineItems) + materialsTotal(form.quoteMaterials);
     const total = calculateTotal(subtotal, taxRate, form.discountRate);
     setForm(prev => ({ ...prev, taxRate, subtotal, total }));
   }
 
   function handleDiscountRateChange(discountRate) {
-    const subtotal = calculateSubtotal(form.lineItems);
+    const subtotal = calculateSubtotal(form.lineItems) + materialsTotal(form.quoteMaterials);
     const total = calculateTotal(subtotal, form.taxRate, discountRate);
     setForm(prev => ({ ...prev, discountRate, subtotal, total }));
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    const subtotal = calculateSubtotal(form.lineItems);
+    const subtotal = calculateSubtotal(form.lineItems) + materialsTotal(form.quoteMaterials);
     const total = calculateTotal(subtotal, form.taxRate, form.discountRate);
     onSave({ ...form, subtotal, total });
   }
@@ -133,7 +179,9 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
   const statuses = type === 'quote' ? QUOTE_STATUSES : INVOICE_STATUSES;
   const dateLabel = type === 'quote' ? 'Valid Until' : 'Due Date';
   const dateField = type === 'quote' ? 'validUntil' : 'dueDate';
-  const subtotal = calculateSubtotal(form.lineItems);
+  const lineSubtotal = calculateSubtotal(form.lineItems);
+  const matTotal = materialsTotal(form.quoteMaterials);
+  const subtotal = lineSubtotal + matTotal;
   const discountAmount = subtotal * ((parseFloat(form.discountRate) || 0) / 100);
   const afterDiscount = subtotal - discountAmount;
   const total = calculateTotal(subtotal, form.taxRate, form.discountRate);
@@ -285,6 +333,101 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
           <div className="form-label" style={{ marginBottom: 8 }}>Line Items</div>
           <LineItemsTable lineItems={form.lineItems} onChange={handleLineItemsChange} />
         </div>
+
+        {/* Materials section — quotes only */}
+        {type === 'quote' && (
+          <div className="doc-form-section">
+            <div className="form-label" style={{ marginBottom: 8 }}>Materials</div>
+
+            {/* Search picker */}
+            {materials.length > 0 ? (
+              <div className="qmat-picker-wrap">
+                <div style={{ position: 'relative' }}>
+                  <span className="qmat-search-icon">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    className="qmat-search"
+                    placeholder="Search materials to add..."
+                    value={matSearch}
+                    onChange={e => { setMatSearch(e.target.value); setShowMatList(true); }}
+                    onFocus={() => setShowMatList(true)}
+                    onBlur={() => setTimeout(() => setShowMatList(false), 150)}
+                  />
+                  {showMatList && filteredMaterials.length > 0 && (
+                    <div className="qmat-dropdown">
+                      {filteredMaterials.map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className={`qmat-option${form.quoteMaterials.some(qm => qm.materialId === m.id) ? ' qmat-option--added' : ''}`}
+                          onMouseDown={() => addQuoteMaterial(m)}
+                        >
+                          {m.photo && (
+                            <img src={m.photo} alt={m.name} className="qmat-option-thumb" />
+                          )}
+                          <span className="qmat-option-info">
+                            <span className="qmat-option-name">{m.name}</span>
+                            {m.description && <span className="qmat-option-desc">{m.description}</span>}
+                          </span>
+                          <span className="qmat-option-price">
+                            {m.price !== null && m.price !== undefined ? formatCurrency(m.price) : '—'}
+                          </span>
+                          {form.quoteMaterials.some(qm => qm.materialId === m.id) && (
+                            <span className="qmat-option-added-label">Added</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="qmat-empty-hint">
+                No materials saved yet.{' '}
+                <span style={{ color: 'var(--color-text-muted)' }}>Add materials on the Materials page first.</span>
+              </p>
+            )}
+
+            {/* Added materials list */}
+            {form.quoteMaterials.length > 0 && (
+              <div className="qmat-list">
+                {form.quoteMaterials.map(qm => (
+                  <div key={qm.id} className="qmat-row">
+                    {qm.photo && (
+                      <img
+                        src={qm.photo}
+                        alt={qm.name}
+                        className="qmat-row-thumb"
+                        onClick={() => setLightbox(qm.photo)}
+                      />
+                    )}
+                    <div className="qmat-row-info">
+                      <span className="qmat-row-name">{qm.name}</span>
+                      {qm.description && <span className="qmat-row-desc">{qm.description}</span>}
+                    </div>
+                    <span className="qmat-row-price">
+                      {qm.price !== null && qm.price !== undefined ? formatCurrency(qm.price) : '—'}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon qmat-remove"
+                      onClick={() => removeQuoteMaterial(qm.id)}
+                      title="Remove"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Totals */}
         <div className="doc-form-totals">
