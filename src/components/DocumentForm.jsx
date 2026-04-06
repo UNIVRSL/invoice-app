@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import LineItemsTable from './LineItemsTable';
 import { useAppContext } from '../context/AppContext';
 import { calculateSubtotal, calculateTotal, formatCurrency, generateId } from '../utils/helpers';
@@ -42,9 +42,8 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
   const [form, setForm] = useState({ ...doc, attachments: doc.attachments || [] });
   const [clientSearch, setClientSearch] = useState('');
   const [showClientList, setShowClientList] = useState(false);
-  const [lightbox, setLightbox] = useState(null); // dataUrl of enlarged photo
+  const [lightbox, setLightbox] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
 
   async function handlePhotoAdd(e) {
     const files = Array.from(e.target.files);
@@ -381,28 +380,21 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
           )}
 
           {form.attachments.length < MAX_PHOTOS && (
-            <>
+            <label className={`btn btn-secondary attachment-add-btn${uploading ? ' attachment-add-btn--disabled' : ''}`}>
               <input
-                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 multiple
                 style={{ display: 'none' }}
                 onChange={handlePhotoAdd}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary attachment-add-btn"
-                onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-                  <polyline points="21,15 16,10 5,21"/>
-                </svg>
-                {uploading ? 'Processing...' : 'Add Photos'}
-              </button>
-            </>
+              />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21,15 16,10 5,21"/>
+              </svg>
+              {uploading ? 'Processing...' : 'Add Photos'}
+            </label>
           )}
         </div>
       </div>

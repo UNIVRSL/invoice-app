@@ -285,6 +285,12 @@
 .attachment-add-btn {
   font-size: 13px;
   gap: 6px;
+  cursor: pointer;
+}
+
+.attachment-add-btn--disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Lightbox */
