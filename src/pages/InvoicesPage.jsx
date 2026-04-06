@@ -4,6 +4,7 @@ import { createEmptyInvoice } from '../utils/defaults';
 import { generateInvoiceNumber as genNum } from '../utils/helpers';
 import DocumentList from '../components/DocumentList';
 import DocumentForm from '../components/DocumentForm';
+import DocumentPreview from '../components/DocumentPreview';
 import SearchFilter from '../components/SearchFilter';
 import Modal from '../components/Modal';
 import './DocumentPage.css';
@@ -12,8 +13,8 @@ const STATUSES = ['draft', 'sent', 'paid'];
 
 export default function InvoicesPage() {
   const { invoices, addInvoice, updateInvoice, deleteInvoice, settings } = useAppContext();
-  const [view, setView] = useState('list');
-  const [editing, setEditing] = useState(null);
+  const [view, setView] = useState('list');       // list | preview | form
+  const [selected, setSelected] = useState(null);  // invoice object for preview/edit
   const [deleteId, setDeleteId] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,13 +25,17 @@ export default function InvoicesPage() {
   function handleNew() {
     const inv = createEmptyInvoice(settings);
     inv.number = genNum(invoices);
-    setEditing(inv);
+    setSelected(inv);
     setView('form');
   }
 
   function handleSelect(id) {
     const inv = invoices.find(i => i.id === id);
-    if (inv) { setEditing({ ...inv }); setView('form'); }
+    if (inv) { setSelected({ ...inv }); setView('preview'); }
+  }
+
+  function handleEdit() {
+    setView('form');
   }
 
   function handleSave(inv) {
@@ -38,12 +43,25 @@ export default function InvoicesPage() {
     if (exists) updateInvoice(inv.id, inv);
     else addInvoice(inv);
     setView('list');
-    setEditing(null);
+    setSelected(null);
   }
 
   function handleCancel() {
+    // If we came from preview, go back to preview; otherwise go to list
+    if (view === 'form' && selected && invoices.some(i => i.id === selected.id)) {
+      // Re-read the latest saved version for preview
+      const latest = invoices.find(i => i.id === selected.id);
+      setSelected({ ...latest });
+      setView('preview');
+    } else {
+      setView('list');
+      setSelected(null);
+    }
+  }
+
+  function handleBack() {
     setView('list');
-    setEditing(null);
+    setSelected(null);
   }
 
   function handleDeleteConfirm() {
@@ -61,10 +79,21 @@ export default function InvoicesPage() {
     return true;
   });
 
-  if (view === 'form' && editing) {
+  if (view === 'preview' && selected) {
+    return (
+      <DocumentPreview
+        document={selected}
+        type="invoice"
+        onEdit={handleEdit}
+        onBack={handleBack}
+      />
+    );
+  }
+
+  if (view === 'form' && selected) {
     return (
       <DocumentForm
-        document={editing}
+        document={selected}
         type="invoice"
         onSave={handleSave}
         onCancel={handleCancel}
