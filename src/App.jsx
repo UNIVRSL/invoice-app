@@ -6,6 +6,7 @@ import QuotesPage from './pages/QuotesPage';
 import TemplatesPage from './pages/TemplatesPage';
 import SettingsPage from './pages/SettingsPage';
 import ClientsPage from './pages/ClientsPage';
+import MaterialsPage from './pages/MaterialsPage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/quotes" element={<QuotesPage />} />
             <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>

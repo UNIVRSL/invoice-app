@@ -10,6 +10,7 @@ export function AppProvider({ children }) {
   const [quotes, setQuotes] = useLocalStorage('invoiceApp_quotes', []);
   const [templates, setTemplates] = useLocalStorage('invoiceApp_templates', defaultTemplates);
   const [clients, setClients] = useLocalStorage('invoiceApp_clients', []);
+  const [materials, setMaterials] = useLocalStorage('invoiceApp_materials', []);
 
   // Settings
   function updateSettings(newSettings) {
@@ -49,6 +50,17 @@ export function AppProvider({ children }) {
     setClients(prev => prev.filter(c => c.id !== id));
   }
 
+  // Materials
+  function addMaterial(material) {
+    setMaterials(prev => [material, ...prev]);
+  }
+  function updateMaterial(id, updatedFields) {
+    setMaterials(prev => prev.map(m => m.id === id ? { ...m, ...updatedFields } : m));
+  }
+  function deleteMaterial(id) {
+    setMaterials(prev => prev.filter(m => m.id !== id));
+  }
+
   // Templates
   function addTemplate(template) {
     setTemplates(prev => [...prev, template]);
@@ -67,6 +79,7 @@ export function AppProvider({ children }) {
       quotes, addQuote, updateQuote, deleteQuote,
       templates, addTemplate, updateTemplate, deleteTemplate,
       clients, addClient, updateClient, deleteClient,
+      materials, addMaterial, updateMaterial, deleteMaterial,
     }}>
       {children}
     </AppContext.Provider>
