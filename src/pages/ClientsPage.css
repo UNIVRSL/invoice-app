@@ -137,4 +137,11 @@
   .client-delete-btn {
     opacity: 1;
   }
+
+  .client-delete-btn svg {
+    width: 17px;
+    height: 17px;
+    min-width: 17px;
+    min-height: 17px;
+  }
 }

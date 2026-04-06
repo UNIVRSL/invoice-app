@@ -129,7 +129,7 @@ export default function TemplatesPage() {
               {!tmpl.isDefault && (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-icon"
+                  className="btn btn-ghost btn-icon template-delete-btn"
                   onClick={e => { e.stopPropagation(); setDeleteId(tmpl.id); }}
                   title="Delete template"
                 >

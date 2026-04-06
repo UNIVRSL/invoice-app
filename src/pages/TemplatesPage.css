@@ -97,4 +97,11 @@
   .template-editor-panel {
     position: static;
   }
+
+  .template-delete-btn svg {
+    width: 17px;
+    height: 17px;
+    min-width: 17px;
+    min-height: 17px;
+  }
 }
