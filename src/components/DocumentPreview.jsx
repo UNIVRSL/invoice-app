@@ -58,6 +58,7 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
       <div className="doc-preview-body">
         {/* From / To */}
         <div className="doc-preview-parties">
+          <span className="doc-preview-parties-number">{doc.number}</span>
           <div className="doc-preview-party">
             <div className="preview-label">From</div>
             <div className="preview-party-info">
