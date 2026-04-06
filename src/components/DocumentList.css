@@ -110,4 +110,11 @@
   .doc-delete-btn {
     opacity: 1;
   }
+
+  .doc-delete-btn svg {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+  }
 }
