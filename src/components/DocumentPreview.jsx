@@ -2,11 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import { getPhotos } from '../hooks/usePhotoStore';
+import { useAppContext } from '../context/AppContext';
+import { getPhotos, getPhoto } from '../hooks/usePhotoStore';
 import './DocumentPreview.css';
 
 export default function DocumentPreview({ document: doc, type, onEdit, onBack }) {
+  const { settings } = useAppContext();
   const [photoMap, setPhotoMap] = useState({});
+  const [logoSrc, setLogoSrc] = useState(null);
   const [lightbox, setLightbox] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const bodyRef = useRef(null);
@@ -16,12 +19,23 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
       const ids = [];
       (doc.attachments || []).forEach(a => { if (a.id) ids.push(a.id); });
       (doc.quoteMaterials || []).forEach(qm => { if (qm.photoId) ids.push(qm.photoId); });
-      if (!ids.length) return;
-      const resolved = await getPhotos(ids);
-      setPhotoMap(resolved);
+      if (ids.length) {
+        const resolved = await getPhotos(ids);
+        setPhotoMap(resolved);
+      }
     }
     resolve().catch(console.error);
   }, [doc]);
+
+  useEffect(() => {
+    if (type === 'invoice' && settings.logoPhotoId) {
+      getPhoto(settings.logoPhotoId).then(data => {
+        if (data) setLogoSrc(data);
+      }).catch(console.error);
+    } else {
+      setLogoSrc(null);
+    }
+  }, [settings.logoPhotoId, type]);
 
   async function handleDownloadPDF() {
     if (!bodyRef.current || downloading) return;
@@ -138,6 +152,9 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
               )}
             </div>
           </div>
+          {logoSrc && (
+            <img src={logoSrc} alt="Business logo" className="doc-preview-logo" />
+          )}
         </div>
 
         {/* Meta */}

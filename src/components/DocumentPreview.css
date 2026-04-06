@@ -64,6 +64,16 @@
   border-radius: var(--radius);
 }
 
+.doc-preview-logo {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .doc-preview-parties-number {
   position: absolute;
   top: 14px;
