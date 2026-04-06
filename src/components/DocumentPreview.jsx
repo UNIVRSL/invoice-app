@@ -153,6 +153,14 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
           </div>
         )}
 
+        {/* Notes */}
+        {doc.notes && (
+          <div className="doc-preview-section">
+            <div className="preview-label" style={{ marginBottom: 6 }}>Notes</div>
+            <p className="preview-notes">{doc.notes}</p>
+          </div>
+        )}
+
         {/* Totals */}
         <div className="doc-preview-totals">
           <div className="preview-totals-row">
@@ -176,14 +184,6 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
             <span>{formatCurrency(doc.total)}</span>
           </div>
         </div>
-
-        {/* Notes */}
-        {doc.notes && (
-          <div className="doc-preview-section">
-            <div className="preview-label" style={{ marginBottom: 6 }}>Notes</div>
-            <p className="preview-notes">{doc.notes}</p>
-          </div>
-        )}
 
         {/* Attachments */}
         {doc.attachments && doc.attachments.length > 0 && (
