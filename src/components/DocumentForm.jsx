@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LineItemsTable from './LineItemsTable';
 import { useAppContext } from '../context/AppContext';
 import { calculateSubtotal, calculateTotal, formatCurrency, generateId } from '../utils/helpers';
+import { savePhoto, getPhotos, deletePhoto } from '../hooks/usePhotoStore';
 import './DocumentForm.css';
 
 const MAX_PHOTOS = 5;
@@ -44,6 +45,7 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
     attachments: doc.attachments || [],
     quoteMaterials: doc.quoteMaterials || [],
   });
+  const [photoMap, setPhotoMap] = useState({});
   const [clientSearch, setClientSearch] = useState('');
   const [showClientList, setShowClientList] = useState(false);
   const [matSearch, setMatSearch] = useState('');
@@ -53,6 +55,53 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
   const [newMatUploading, setNewMatUploading] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // Resolve photos from IDB on mount; migrate any legacy dataUrl attachments
+  useEffect(() => {
+    async function resolve() {
+      const map = {};
+
+      // Attachments: migrate legacy dataUrl entries → IDB, resolve IDB-only entries
+      const legacyAtts = (doc.attachments || []).filter(a => a.dataUrl);
+      const idbAtts = (doc.attachments || []).filter(a => a.id && !a.dataUrl);
+
+      for (const att of legacyAtts) {
+        await savePhoto(att.id, att.dataUrl);
+        map[att.id] = att.dataUrl;
+      }
+      if (idbAtts.length) {
+        const resolved = await getPhotos(idbAtts.map(a => a.id));
+        Object.assign(map, resolved);
+      }
+      if (legacyAtts.length) {
+        setForm(prev => ({
+          ...prev,
+          attachments: prev.attachments.map(a => a.dataUrl ? { id: a.id, name: a.name } : a),
+        }));
+      }
+
+      // Quote materials photoIds
+      const qmIds = (doc.quoteMaterials || []).filter(qm => qm.photoId).map(qm => qm.photoId);
+      if (qmIds.length) {
+        const resolved = await getPhotos(qmIds);
+        Object.assign(map, resolved);
+      }
+
+      setPhotoMap(map);
+    }
+    resolve().catch(console.error);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Resolve material catalog photos for the picker dropdown
+  useEffect(() => {
+    const ids = materials.filter(m => m.photoId).map(m => m.photoId);
+    if (!ids.length) return;
+    getPhotos(ids).then(resolved => {
+      if (Object.keys(resolved).length) {
+        setPhotoMap(prev => ({ ...prev, ...resolved }));
+      }
+    }).catch(console.error);
+  }, [materials]);
 
   const filteredMaterials = matSearch.trim()
     ? materials.filter(m =>
@@ -69,7 +118,7 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
       name: material.name,
       description: material.description || '',
       price: material.price ?? null,
-      photo: material.photo || null,
+      photoId: material.photoId || null,
     };
     setForm(prev => {
       const next = [...prev.quoteMaterials, entry];
@@ -94,22 +143,25 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
     }
   }
 
-  function handleNewMatSave(e) {
+  async function handleNewMatSave(e) {
     e.preventDefault();
     if (!newMatForm.name.trim()) return;
     const id = generateId();
+    let photoId = null;
+    if (newMatForm.photo) {
+      photoId = generateId();
+      await savePhoto(photoId, newMatForm.photo);
+      setPhotoMap(prev => ({ ...prev, [photoId]: newMatForm.photo }));
+    }
     const material = {
       id,
       name: newMatForm.name.trim(),
       description: newMatForm.description.trim(),
       price: newMatForm.price !== '' ? parseFloat(newMatForm.price) : null,
-      photo: newMatForm.photo,
+      photoId,
     };
-    // Save to global materials catalog
     addMaterial(material);
-    // Add to this quote
     addQuoteMaterial(material);
-    // Reset modal
     setNewMatModal(false);
     setNewMatForm({ name: '', description: '', price: '', photo: null });
   }
@@ -130,10 +182,19 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
     const toProcess = files.slice(0, remaining);
     setUploading(true);
     try {
-      const compressed = await Promise.all(
-        toProcess.map(async f => ({ id: generateId(), name: f.name, dataUrl: await compressImage(f) }))
+      const results = await Promise.all(
+        toProcess.map(async f => {
+          const id = generateId();
+          const dataUrl = await compressImage(f);
+          await savePhoto(id, dataUrl);
+          return { id, name: f.name, dataUrl };
+        })
       );
-      setForm(prev => ({ ...prev, attachments: [...(prev.attachments || []), ...compressed] }));
+      const newMap = {};
+      results.forEach(r => { newMap[r.id] = r.dataUrl; });
+      setPhotoMap(prev => ({ ...prev, ...newMap }));
+      const newAtts = results.map(({ id, name }) => ({ id, name }));
+      setForm(prev => ({ ...prev, attachments: [...(prev.attachments || []), ...newAtts] }));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -141,6 +202,8 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
   }
 
   function handlePhotoRemove(id) {
+    deletePhoto(id).catch(console.error);
+    setPhotoMap(prev => { const next = { ...prev }; delete next[id]; return next; });
     setForm(prev => ({ ...prev, attachments: prev.attachments.filter(a => a.id !== id) }));
   }
 
@@ -395,28 +458,31 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
                   />
                   {showMatList && filteredMaterials.length > 0 && (
                     <div className="qmat-dropdown">
-                      {filteredMaterials.map(m => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className={`qmat-option${form.quoteMaterials.some(qm => qm.materialId === m.id) ? ' qmat-option--added' : ''}`}
-                          onMouseDown={() => addQuoteMaterial(m)}
-                        >
-                          {m.photo && (
-                            <img src={m.photo} alt={m.name} className="qmat-option-thumb" />
-                          )}
-                          <span className="qmat-option-info">
-                            <span className="qmat-option-name">{m.name}</span>
-                            {m.description && <span className="qmat-option-desc">{m.description}</span>}
-                          </span>
-                          <span className="qmat-option-price">
-                            {m.price !== null && m.price !== undefined ? formatCurrency(m.price) : '—'}
-                          </span>
-                          {form.quoteMaterials.some(qm => qm.materialId === m.id) && (
-                            <span className="qmat-option-added-label">Added</span>
-                          )}
-                        </button>
-                      ))}
+                      {filteredMaterials.map(m => {
+                        const thumbSrc = m.photoId ? photoMap[m.photoId] : m.photo;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            className={`qmat-option${form.quoteMaterials.some(qm => qm.materialId === m.id) ? ' qmat-option--added' : ''}`}
+                            onMouseDown={() => addQuoteMaterial(m)}
+                          >
+                            {thumbSrc && (
+                              <img src={thumbSrc} alt={m.name} className="qmat-option-thumb" />
+                            )}
+                            <span className="qmat-option-info">
+                              <span className="qmat-option-name">{m.name}</span>
+                              {m.description && <span className="qmat-option-desc">{m.description}</span>}
+                            </span>
+                            <span className="qmat-option-price">
+                              {m.price !== null && m.price !== undefined ? formatCurrency(m.price) : '—'}
+                            </span>
+                            {form.quoteMaterials.some(qm => qm.materialId === m.id) && (
+                              <span className="qmat-option-added-label">Added</span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -438,35 +504,38 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
             {/* Added materials list */}
             {form.quoteMaterials.length > 0 && (
               <div className="qmat-list">
-                {form.quoteMaterials.map(qm => (
-                  <div key={qm.id} className="qmat-row">
-                    {qm.photo && (
-                      <img
-                        src={qm.photo}
-                        alt={qm.name}
-                        className="qmat-row-thumb"
-                        onClick={() => setLightbox(qm.photo)}
-                      />
-                    )}
-                    <div className="qmat-row-info">
-                      <span className="qmat-row-name">{qm.name}</span>
-                      {qm.description && <span className="qmat-row-desc">{qm.description}</span>}
+                {form.quoteMaterials.map(qm => {
+                  const qmPhotoSrc = qm.photoId ? photoMap[qm.photoId] : qm.photo;
+                  return (
+                    <div key={qm.id} className="qmat-row">
+                      {qmPhotoSrc && (
+                        <img
+                          src={qmPhotoSrc}
+                          alt={qm.name}
+                          className="qmat-row-thumb"
+                          onClick={() => setLightbox(qmPhotoSrc)}
+                        />
+                      )}
+                      <div className="qmat-row-info">
+                        <span className="qmat-row-name">{qm.name}</span>
+                        {qm.description && <span className="qmat-row-desc">{qm.description}</span>}
+                      </div>
+                      <span className="qmat-row-price">
+                        {qm.price !== null && qm.price !== undefined ? formatCurrency(qm.price) : '—'}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon qmat-remove"
+                        onClick={() => removeQuoteMaterial(qm.id)}
+                        title="Remove"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
                     </div>
-                    <span className="qmat-row-price">
-                      {qm.price !== null && qm.price !== undefined ? formatCurrency(qm.price) : '—'}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-icon qmat-remove"
-                      onClick={() => removeQuoteMaterial(qm.id)}
-                      title="Remove"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -542,26 +611,30 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
 
           {form.attachments.length > 0 && (
             <div className="attachments-grid">
-              {form.attachments.map(att => (
-                <div key={att.id} className="attachment-thumb">
-                  <img
-                    src={att.dataUrl}
-                    alt={att.name}
-                    onClick={() => setLightbox(att.dataUrl)}
-                    title={att.name}
-                  />
-                  <button
-                    type="button"
-                    className="attachment-remove"
-                    onClick={() => handlePhotoRemove(att.id)}
-                    title="Remove photo"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
-                </div>
-              ))}
+              {form.attachments.map(att => {
+                const src = photoMap[att.id];
+                if (!src) return null;
+                return (
+                  <div key={att.id} className="attachment-thumb">
+                    <img
+                      src={src}
+                      alt={att.name}
+                      onClick={() => setLightbox(src)}
+                      title={att.name}
+                    />
+                    <button
+                      type="button"
+                      className="attachment-remove"
+                      onClick={() => handlePhotoRemove(att.id)}
+                      title="Remove photo"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 

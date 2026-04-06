@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { generateId, formatCurrency } from '../utils/helpers';
+import { savePhoto, getPhotos, deletePhoto } from '../hooks/usePhotoStore';
 import Modal from '../components/Modal';
 import './MaterialsPage.css';
 
@@ -33,7 +34,7 @@ function compressImage(file) {
   });
 }
 
-const EMPTY_FORM = { name: '', description: '', price: '', photo: null };
+const EMPTY_FORM = { name: '', description: '', price: '', photoId: null, photoPreview: null };
 
 export default function MaterialsPage() {
   const { materials, addMaterial, updateMaterial, deleteMaterial } = useAppContext();
@@ -44,6 +45,33 @@ export default function MaterialsPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [lightbox, setLightbox] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [photoMap, setPhotoMap] = useState({});
+
+  // Resolve all material photos from IDB; also handle legacy `photo` dataUrl fields
+  useEffect(() => {
+    async function resolve() {
+      const map = {};
+
+      // Migrate legacy materials that still have `photo` dataUrl stored in localStorage
+      const legacyMats = materials.filter(m => m.photo && !m.photoId);
+      for (const m of legacyMats) {
+        const photoId = m.id; // reuse material ID as photo ID
+        await savePhoto(photoId, m.photo);
+        updateMaterial(m.id, { photoId, photo: undefined });
+        map[photoId] = m.photo;
+      }
+
+      // Resolve IDB-stored photos for current materials
+      const ids = materials.filter(m => m.photoId).map(m => m.photoId);
+      if (ids.length) {
+        const resolved = await getPhotos(ids);
+        Object.assign(map, resolved);
+      }
+
+      setPhotoMap(map);
+    }
+    resolve().catch(console.error);
+  }, [materials.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNew() {
     setEditingId(null);
@@ -53,11 +81,16 @@ export default function MaterialsPage() {
 
   function openEdit(material) {
     setEditingId(material.id);
+    // Support legacy material.photo for display while migration runs
+    const preview = material.photoId
+      ? (photoMap[material.photoId] || null)
+      : (material.photo || null);
     setForm({
       name: material.name || '',
       description: material.description || '',
       price: material.price !== undefined ? String(material.price) : '',
-      photo: material.photo || null,
+      photoId: material.photoId || null,
+      photoPreview: preview,
     });
     setModalOpen(true);
   }
@@ -78,7 +111,10 @@ export default function MaterialsPage() {
     setUploadingPhoto(true);
     try {
       const dataUrl = await compressImage(file);
-      setForm(prev => ({ ...prev, photo: dataUrl }));
+      const photoId = generateId();
+      await savePhoto(photoId, dataUrl);
+      setPhotoMap(prev => ({ ...prev, [photoId]: dataUrl }));
+      setForm(prev => ({ ...prev, photoId, photoPreview: dataUrl }));
     } finally {
       setUploadingPhoto(false);
       e.target.value = '';
@@ -86,19 +122,28 @@ export default function MaterialsPage() {
   }
 
   function removePhoto() {
-    setForm(prev => ({ ...prev, photo: null }));
+    // Don't delete from IDB yet — wait until save (user might cancel)
+    setForm(prev => ({ ...prev, photoId: null, photoPreview: null }));
   }
 
   function handleSave(e) {
     e.preventDefault();
     if (!form.name.trim()) return;
+
     const payload = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: form.price !== '' ? parseFloat(form.price) : null,
-      photo: form.photo,
+      photoId: form.photoId || null,
     };
+
     if (editingId) {
+      const oldMaterial = materials.find(m => m.id === editingId);
+      // Clean up old photo from IDB if it changed
+      if (oldMaterial?.photoId && oldMaterial.photoId !== form.photoId) {
+        deletePhoto(oldMaterial.photoId).catch(console.error);
+        setPhotoMap(prev => { const next = { ...prev }; delete next[oldMaterial.photoId]; return next; });
+      }
       updateMaterial(editingId, payload);
     } else {
       addMaterial({ ...payload, id: generateId() });
@@ -159,47 +204,50 @@ export default function MaterialsPage() {
         </div>
       ) : (
         <div className="materials-grid">
-          {filtered.map(material => (
-            <div key={material.id} className="material-card" onClick={() => openEdit(material)}>
-              {material.photo ? (
-                <div
-                  className="material-card-photo"
-                  onClick={e => { e.stopPropagation(); setLightbox(material.photo); }}
+          {filtered.map(material => {
+            const photoSrc = material.photoId ? photoMap[material.photoId] : material.photo;
+            return (
+              <div key={material.id} className="material-card" onClick={() => openEdit(material)}>
+                {photoSrc ? (
+                  <div
+                    className="material-card-photo"
+                    onClick={e => { e.stopPropagation(); setLightbox(photoSrc); }}
+                  >
+                    <img src={photoSrc} alt={material.name} />
+                  </div>
+                ) : (
+                  <div className="material-card-photo material-card-photo--empty">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21,15 16,10 5,21"/>
+                    </svg>
+                  </div>
+                )}
+                <div className="material-card-body">
+                  <div className="material-card-name">{material.name}</div>
+                  {material.description && (
+                    <div className="material-card-desc">{material.description}</div>
+                  )}
+                  {material.price !== null && material.price !== undefined && (
+                    <div className="material-card-price">{formatCurrency(material.price)}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-icon material-delete-btn"
+                  onClick={e => { e.stopPropagation(); setDeleteId(material.id); }}
+                  title="Delete"
                 >
-                  <img src={material.photo} alt={material.name} />
-                </div>
-              ) : (
-                <div className="material-card-photo material-card-photo--empty">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21,15 16,10 5,21"/>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/>
+                    <path d="M10,11v6"/><path d="M14,11v6"/>
+                    <path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V6"/>
                   </svg>
-                </div>
-              )}
-              <div className="material-card-body">
-                <div className="material-card-name">{material.name}</div>
-                {material.description && (
-                  <div className="material-card-desc">{material.description}</div>
-                )}
-                {material.price !== null && material.price !== undefined && (
-                  <div className="material-card-price">{formatCurrency(material.price)}</div>
-                )}
+                </button>
               </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-icon material-delete-btn"
-                onClick={e => { e.stopPropagation(); setDeleteId(material.id); }}
-                title="Delete"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3,6 5,6 21,6"/>
-                  <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/>
-                  <path d="M10,11v6"/><path d="M14,11v6"/>
-                  <path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1V6"/>
-                </svg>
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -212,9 +260,9 @@ export default function MaterialsPage() {
         <form onSubmit={handleSave} className="material-form">
           {/* Photo upload */}
           <div className="material-form-photo-wrap">
-            {form.photo ? (
+            {form.photoPreview ? (
               <div className="material-form-photo-preview">
-                <img src={form.photo} alt="Material" />
+                <img src={form.photoPreview} alt="Material" />
                 <button type="button" className="material-form-photo-remove" onClick={removePhoto} title="Remove photo">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>

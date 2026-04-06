@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { defaultSettings, defaultTemplates } from '../utils/defaults';
+import { deletePhoto, deletePhotos } from '../hooks/usePhotoStore';
 
 const AppContext = createContext(null);
 
@@ -25,7 +26,14 @@ export function AppProvider({ children }) {
     setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, ...updatedFields } : inv));
   }
   function deleteInvoice(id) {
-    setInvoices(prev => prev.filter(inv => inv.id !== id));
+    setInvoices(prev => {
+      const inv = prev.find(i => i.id === id);
+      if (inv?.attachments?.length) {
+        const photoIds = inv.attachments.map(a => a.id).filter(Boolean);
+        if (photoIds.length) deletePhotos(photoIds);
+      }
+      return prev.filter(i => i.id !== id);
+    });
   }
 
   // Quotes
@@ -36,7 +44,14 @@ export function AppProvider({ children }) {
     setQuotes(prev => prev.map(q => q.id === id ? { ...q, ...updatedFields } : q));
   }
   function deleteQuote(id) {
-    setQuotes(prev => prev.filter(q => q.id !== id));
+    setQuotes(prev => {
+      const q = prev.find(q => q.id === id);
+      if (q?.attachments?.length) {
+        const photoIds = q.attachments.map(a => a.id).filter(Boolean);
+        if (photoIds.length) deletePhotos(photoIds);
+      }
+      return prev.filter(q => q.id !== id);
+    });
   }
 
   // Clients
@@ -58,7 +73,11 @@ export function AppProvider({ children }) {
     setMaterials(prev => prev.map(m => m.id === id ? { ...m, ...updatedFields } : m));
   }
   function deleteMaterial(id) {
-    setMaterials(prev => prev.filter(m => m.id !== id));
+    setMaterials(prev => {
+      const m = prev.find(m => m.id === id);
+      if (m?.photoId) deletePhoto(m.photoId);
+      return prev.filter(m => m.id !== id);
+    });
   }
 
   // Templates
