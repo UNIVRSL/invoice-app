@@ -45,6 +45,18 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          // Resolve CSS custom properties — html2canvas doesn't handle them
+          const computedStyle = getComputedStyle(document.documentElement);
+          const vars = Array.from(computedStyle)
+            .filter(prop => prop.startsWith('--'));
+          vars.forEach(varName => {
+            clonedDoc.documentElement.style.setProperty(
+              varName,
+              computedStyle.getPropertyValue(varName)
+            );
+          });
+        },
       });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const imgWidth = canvas.width;
