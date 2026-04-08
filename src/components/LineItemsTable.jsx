@@ -51,7 +51,7 @@ export default function LineItemsTable({ lineItems, onChange }) {
                 <input
                   type="number"
                   min="0"
-                  step="1"
+                  step="any"
                   value={item.qty}
                   onChange={e => handleFieldChange(item.id, 'qty', e.target.value)}
                 />
