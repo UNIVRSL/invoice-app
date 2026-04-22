@@ -2,6 +2,7 @@ import { formatCurrency, formatDate } from '../utils/helpers';
 import './DocumentList.css';
 
 export default function DocumentList({ documents, type, onSelect, onDelete }) {
+  const runningTotal = documents.reduce((sum, doc) => sum + (parseFloat(doc.total) || 0), 0);
   const dateLabel = type === 'quote' ? 'Valid Until' : 'Due Date';
   const dateField = type === 'quote' ? 'validUntil' : 'dueDate';
 
@@ -57,6 +58,15 @@ export default function DocumentList({ documents, type, onSelect, onDelete }) {
             </tr>
           ))}
         </tbody>
+        {type === 'invoice' && (
+          <tfoot>
+            <tr>
+              <td colSpan={4} />
+              <td className="doc-running-total">{formatCurrency(runningTotal)}</td>
+              <td colSpan={2} />
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

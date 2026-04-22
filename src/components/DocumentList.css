@@ -78,6 +78,14 @@
   font-weight: 500;
 }
 
+.doc-running-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #22aa3c;
+  padding: 10px 14px;
+  font-size: 15px;
+}
+
 .text-muted {
   color: var(--color-text-muted);
 }
