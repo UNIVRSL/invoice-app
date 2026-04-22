@@ -7,6 +7,7 @@ import DocumentForm from '../components/DocumentForm';
 import DocumentPreview from '../components/DocumentPreview';
 import SearchFilter from '../components/SearchFilter';
 import Modal from '../components/Modal';
+import { formatCurrency } from '../utils/helpers';
 import './DocumentPage.css';
 
 const STATUSES = ['draft', 'sent', 'paid'];
@@ -127,6 +128,10 @@ export default function InvoicesPage() {
         onSelect={handleSelect}
         onDelete={id => setDeleteId(id)}
       />
+
+      <div className="invoices-paid-total">
+        {formatCurrency(filtered.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0))}
+      </div>
 
       <Modal
         isOpen={!!deleteId}

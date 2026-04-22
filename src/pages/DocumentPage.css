@@ -1,3 +1,12 @@
 .new-btn {
   gap: 6px;
 }
+
+.invoices-paid-total {
+  margin-top: 12px;
+  text-align: right;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #22aa3c;
+}
