@@ -89,7 +89,7 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
   const dateLabel = type === 'quote' ? 'Valid Until' : 'Due Date';
   const dateValue = type === 'quote' ? doc.validUntil : doc.dueDate;
   const lineSubtotal = (doc.lineItems || []).reduce((sum, li) => sum + (parseFloat(li.amount) || 0), 0);
-  const matTotal = (doc.quoteMaterials || []).reduce((sum, qm) => sum + (parseFloat(qm.price) || 0), 0);
+  const matTotal = (doc.quoteMaterials || []).reduce((sum, qm) => sum + (parseFloat(qm.qty) || 1) * (parseFloat(qm.price) || 0), 0);
   const subtotal = lineSubtotal + matTotal;
   const discountRate = parseFloat(doc.discountRate) || 0;
   const discountAmount = subtotal * (discountRate / 100);
@@ -229,8 +229,13 @@ export default function DocumentPreview({ document: doc, type, onEdit, onBack })
                       <span className="preview-material-name">{qm.name}</span>
                       {qm.description && <span className="preview-material-desc">{qm.description}</span>}
                     </div>
+                    {qm.qty && qm.qty != 1 && (
+                      <span className="preview-material-qty">×{qm.qty}</span>
+                    )}
                     <span className="preview-material-price">
-                      {qm.price !== null && qm.price !== undefined ? formatCurrency(qm.price) : '—'}
+                      {qm.price !== null && qm.price !== undefined
+                        ? formatCurrency((parseFloat(qm.qty) || 1) * parseFloat(qm.price))
+                        : '—'}
                     </span>
                   </div>
                 );

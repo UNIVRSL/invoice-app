@@ -118,6 +118,7 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
       name: material.name,
       description: material.description || '',
       price: material.price ?? null,
+      qty: 1,
       photoId: material.photoId || null,
     };
     setForm(prev => {
@@ -247,7 +248,20 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
   }
 
   function materialsTotal(quoteMaterials) {
-    return (quoteMaterials || []).reduce((sum, qm) => sum + (parseFloat(qm.price) || 0), 0);
+    return (quoteMaterials || []).reduce((sum, qm) => {
+      const qty = parseFloat(qm.qty) || 1;
+      const price = parseFloat(qm.price) || 0;
+      return sum + qty * price;
+    }, 0);
+  }
+
+  function updateQuoteMaterialQty(id, qty) {
+    setForm(prev => {
+      const next = prev.quoteMaterials.map(qm => qm.id === id ? { ...qm, qty } : qm);
+      const subtotal = calculateSubtotal(prev.lineItems) + materialsTotal(next);
+      const total = calculateTotal(subtotal, prev.taxRate, prev.discountRate);
+      return { ...prev, quoteMaterials: next, subtotal, total };
+    });
   }
 
   function handleLineItemsChange(lineItems) {
@@ -520,8 +534,22 @@ export default function DocumentForm({ document: doc, type, onSave, onCancel }) 
                         <span className="qmat-row-name">{qm.name}</span>
                         {qm.description && <span className="qmat-row-desc">{qm.description}</span>}
                       </div>
+                      <div className="qmat-row-qty-wrap">
+                        <span className="qmat-row-qty-label">Qty</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          className="qmat-row-qty-input"
+                          value={qm.qty ?? 1}
+                          onChange={e => updateQuoteMaterialQty(qm.id, e.target.value)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      </div>
                       <span className="qmat-row-price">
-                        {qm.price !== null && qm.price !== undefined ? formatCurrency(qm.price) : '—'}
+                        {qm.price !== null && qm.price !== undefined
+                          ? formatCurrency((parseFloat(qm.qty) || 1) * parseFloat(qm.price))
+                          : '—'}
                       </span>
                       <button
                         type="button"

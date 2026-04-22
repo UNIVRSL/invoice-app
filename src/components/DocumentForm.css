@@ -397,6 +397,27 @@
   text-overflow: ellipsis;
 }
 
+.qmat-row-qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.qmat-row-qty-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.qmat-row-qty-input {
+  width: 52px;
+  padding: 3px 6px;
+  font-size: 13px;
+  height: auto;
+  text-align: center;
+}
+
 .qmat-row-price {
   font-size: 13px;
   font-weight: 500;

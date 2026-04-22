@@ -228,6 +228,13 @@
   text-overflow: ellipsis;
 }
 
+.preview-material-qty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .preview-material-price {
   font-size: 13px;
   font-weight: 500;
